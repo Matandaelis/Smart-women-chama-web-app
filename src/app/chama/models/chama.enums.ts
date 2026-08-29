@@ -136,6 +136,66 @@ export enum ExitResolution {
 
 // ── Period Closure Reason ─────────────────────────────────────
 // Required when closing a period that isn't in normal PAID state.
+// ── Member Roles ────────────────────────────────────────────
+// Maps to dt_member_role custom data table.
+// Different roles carry different permissions (e.g., Treasurer can record
+// payments, Chairperson can approve loans).
+export enum MemberRole {
+  /** Default role for all members */
+  MEMBER = 'MEMBER',
+  /** Treasurer records payments, manages collection sheets */
+  TREASURER = 'TREASURER',
+  /** Secretary records minutes, manages meeting notes */
+  SECRETARY = 'SECRETARY',
+  /** Chairperson conducts meetings, approves motions */
+  CHAIRPERSON = 'CHAIRPERSON',
+  /** Loan officer manages loan applications and approvals */
+  LOAN_OFFICER = 'LOAN_OFFICER'
+}
+
+// ── Meeting Status ───────────────────────────────────────────
+// Maps to dt_meeting_record custom data table.
+export enum MeetingStatus {
+  SCHEDULED = 'SCHEDULED',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED'
+}
+
+// ── Social Fund Purpose ─────────────────────────────────────
+// Maps to dt_social_fund custom data table.
+// Social fund is a separate pool within the chama for community welfare.
+export enum SocialFundPurpose {
+  EMERGENCY = 'EMERGENCY',
+  FUNERAL = 'FUNERAL',
+  WEDDING = 'WEDDING',
+  MEDICAL = 'MEDICAL',
+  EDUCATION = 'EDUCATION',
+  BEREAVEMENT = 'BEREAVEMENT',
+  CELEBRATION = 'CELEBRATION',
+  OTHER = 'OTHER'
+}
+
+// ── Loan Vote Result ────────────────────────────────────────
+// Maps to dt_loan_vote custom data table.
+export enum LoanVoteResult {
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  PENDING = 'PENDING'
+}
+
+// ── Share-Out Calculation Method ─────────────────────────────
+// Maps to dt_share_out custom data table.
+export enum ShareOutMethod {
+  /** Equal share: total surplus / active members */
+  EQUAL = 'EQUAL',
+  /** Proportional: based on contribution percentage */
+  PROPORTIONAL = 'PROPORTIONAL',
+  /** Hybrid: equal base + proportional bonus */
+  HYBRID = 'HYBRID'
+}
+
+// ── Period Closure Reason ─────────────────────────────────────
 export enum PeriodClosureReason {
   /** All contributions paid, payout completed — normal closure */
   NORMAL = 'NORMAL',

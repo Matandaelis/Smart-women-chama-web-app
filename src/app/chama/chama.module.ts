@@ -23,6 +23,8 @@ import { ChamaContributionsComponent } from './chama-contributions/chama-contrib
 import { ChamaPayoutsComponent } from './chama-payouts/chama-payouts.component';
 import { ChamaReconciliationComponent } from './chama-reconciliation/chama-reconciliation.component';
 import { ChamaGovernanceComponent } from './chama-governance/chama-governance.component';
+import { ChamaMeetingsComponent } from './chama-meetings/chama-meetings.component';
+import { ChamaSocialFundComponent } from './chama-social-fund/chama-social-fund.component';
 
 /**
  * Chama Module
@@ -44,7 +46,9 @@ import { ChamaGovernanceComponent } from './chama-governance/chama-governance.co
     ChamaContributionsComponent,
     ChamaPayoutsComponent,
     ChamaReconciliationComponent,
-    ChamaGovernanceComponent
+    ChamaGovernanceComponent,
+    ChamaMeetingsComponent,
+    ChamaSocialFundComponent
   ]
 })
 export class ChamaModule {}

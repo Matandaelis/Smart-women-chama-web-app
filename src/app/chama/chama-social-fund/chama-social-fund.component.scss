@@ -1,0 +1,49 @@
+/**
+ * Copyright since 2025 Mifos Initiative
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
+/**
+ * Copyright since 2025 Mifos Initiative
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
+:host {
+  display: block;
+  padding: 16px;
+}
+
+.stat-label {
+  display: block;
+  font-size: 12px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  display: block;
+  font-size: 24px;
+  font-weight: 500;
+  color: #333;
+}
+
+.info-icon {
+  color: #1976d2;
+  font-size: 24px;
+}
+
+.w-100 {
+  width: 100%;
+}
+
+table {
+  width: 100%;
+}

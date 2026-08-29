@@ -21,6 +21,8 @@ import { ChamaContributionsComponent } from './chama-contributions/chama-contrib
 import { ChamaPayoutsComponent } from './chama-payouts/chama-payouts.component';
 import { ChamaReconciliationComponent } from './chama-reconciliation/chama-reconciliation.component';
 import { ChamaGovernanceComponent } from './chama-governance/chama-governance.component';
+import { ChamaMeetingsComponent } from './chama-meetings/chama-meetings.component';
+import { ChamaSocialFundComponent } from './chama-social-fund/chama-social-fund.component';
 
 import { ChamaDashboardResolver } from './common-resolvers/chama-dashboard.resolver';
 import { ChamaMembersResolver } from './common-resolvers/chama-members.resolver';
@@ -31,6 +33,8 @@ import { ChamaContributionsResolver } from './common-resolvers/chama-contributio
 import { ChamaPayoutsResolver } from './common-resolvers/chama-payouts.resolver';
 import { ChamaReconciliationResolver } from './common-resolvers/chama-reconciliation.resolver';
 import { ChamaGovernanceResolver } from './common-resolvers/chama-governance.resolver';
+import { ChamaMeetingsResolver } from './common-resolvers/chama-meetings.resolver';
+import { ChamaSocialFundResolver } from './common-resolvers/chama-social-fund.resolver';
 
 const routes: Routes = [
   Route.withShell([
@@ -118,6 +122,22 @@ const routes: Routes = [
           resolve: {
             governanceData: ChamaGovernanceResolver
           }
+        },
+        {
+          path: 'meetings',
+          component: ChamaMeetingsComponent,
+          data: { title: 'Meetings', breadcrumb: 'Meetings' },
+          resolve: {
+            meetings: ChamaMeetingsResolver
+          }
+        },
+        {
+          path: 'social-fund',
+          component: ChamaSocialFundComponent,
+          data: { title: 'Social Fund', breadcrumb: 'Social Fund' },
+          resolve: {
+            socialFund: ChamaSocialFundResolver
+          }
         }
       ]
     }
@@ -136,7 +156,9 @@ const routes: Routes = [
     ChamaContributionsResolver,
     ChamaPayoutsResolver,
     ChamaReconciliationResolver,
-    ChamaGovernanceResolver
+    ChamaGovernanceResolver,
+    ChamaMeetingsResolver,
+    ChamaSocialFundResolver
   ]
 })
 export class ChamaRoutingModule {}

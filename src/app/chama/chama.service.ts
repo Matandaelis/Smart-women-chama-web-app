@@ -37,7 +37,23 @@ import {
   AuditEvent,
   GovernanceMeeting,
   ChamaDashboard,
-  PagedResponse
+  PagedResponse,
+  ChamaMemberRole,
+  AssignRoleRequest,
+  ChamaMeeting,
+  MeetingAttendance,
+  RecordAttendanceRequest,
+  SocialFund,
+  SocialFundContribution,
+  SocialFundDisbursement,
+  SocialFundDisbursementRequest,
+  ShareOut,
+  ShareOutLineItem,
+  LoanRequest,
+  LoanVote,
+  CastVoteRequest,
+  Fine,
+  ImposeFineRequest
 } from './models';
 
 /**
@@ -453,18 +469,6 @@ export class ChamaService {
   // ── Governance ────────────────────────────────────────────
   // fineract-api: GET /groups/{groupId}/calendars — List calendars (meetings)
 
-  getMeetings(): Observable<GovernanceMeeting[]> {
-    return this.http.get<GovernanceMeeting[]>('/groups/template?template=true');
-  }
-
-  createMeeting(meeting: Partial<GovernanceMeeting>): Observable<GovernanceMeeting> {
-    return this.http.post<GovernanceMeeting>('/groups/calendars', meeting);
-  }
-
-  getMeeting(meetingId: number): Observable<GovernanceMeeting> {
-    return this.http.get<GovernanceMeeting>(`/groups/${meetingId}/calendars`);
-  }
-
   voteResolution(
     meetingId: number,
     resolutionId: number,
@@ -521,6 +525,207 @@ export class ChamaService {
     const httpParams = new HttpParams().set('command', 'withdrawal');
     return this.http.post(`/savingsaccounts/${accountId}/transactions`, data, {
       params: httpParams
+    });
+  }
+
+  // ── Member Roles ──────────────────────────────────────────
+  // fineract-api: GET /datatables/dt_member_role/{groupId}
+  // fineract-api: POST /datatables/dt_member_role/{groupId}
+
+  getMemberRoles(): Observable<ChamaMemberRole[]> {
+    return this.http.get<ChamaMemberRole[]>('/datatables/dt_member_role');
+  }
+
+  getMemberRole(memberId: number): Observable<ChamaMemberRole> {
+    return this.http.get<ChamaMemberRole>(`/datatables/dt_member_role/${memberId}`);
+  }
+
+  assignRole(request: AssignRoleRequest): Observable<ChamaMemberRole> {
+    return this.http.post<ChamaMemberRole>('/datatables/dt_member_role', request);
+  }
+
+  removeRole(memberId: number): Observable<any> {
+    return this.http.delete(`/datatables/dt_member_role/${memberId}`);
+  }
+
+  // ── Meetings ──────────────────────────────────────────────
+  // fineract-api: GET /groups/{groupId}/calendars — List meetings
+  // fineract-api: POST /groups/{groupId}/calendars — Schedule meeting
+  // fineract-api: POST /groups/{groupId}/meetings — Record attendance
+  // fineract-api: GET /groups/{groupId}/meetings/template — Meeting template
+
+  getMeetings(): Observable<ChamaMeeting[]> {
+    return this.http.get<ChamaMeeting[]>('/groups/calendars');
+  }
+
+  getMeeting(meetingId: number): Observable<ChamaMeeting> {
+    return this.http.get<ChamaMeeting>(`/groups/calendars/${meetingId}`);
+  }
+
+  scheduleMeeting(meeting: Partial<ChamaMeeting>): Observable<ChamaMeeting> {
+    return this.http.post<ChamaMeeting>('/groups/calendars', meeting);
+  }
+
+  startMeeting(meetingId: number): Observable<ChamaMeeting> {
+    const httpParams = new HttpParams().set('command', 'start');
+    return this.http.put<ChamaMeeting>(
+      `/groups/calendars/${meetingId}`,
+      { status: 'IN_PROGRESS' },
+      { params: httpParams }
+    );
+  }
+
+  completeMeeting(meetingId: number): Observable<ChamaMeeting> {
+    const httpParams = new HttpParams().set('command', 'complete');
+    return this.http.put<ChamaMeeting>(
+      `/groups/calendars/${meetingId}`,
+      { status: 'COMPLETED' },
+      { params: httpParams }
+    );
+  }
+
+  cancelMeeting(meetingId: number, reason: string): Observable<ChamaMeeting> {
+    const httpParams = new HttpParams().set('command', 'cancel');
+    return this.http.put<ChamaMeeting>(
+      `/groups/calendars/${meetingId}`,
+      { status: 'CANCELLED', reason },
+      { params: httpParams }
+    );
+  }
+
+  getMeetingAttendance(meetingId: number): Observable<MeetingAttendance[]> {
+    return this.http.get<MeetingAttendance[]>(`/groups/calendars/${meetingId}/attendance`);
+  }
+
+  recordAttendance(request: RecordAttendanceRequest): Observable<MeetingAttendance[]> {
+    // fineract-api: POST /groups/{groupId}/meetings — Record attendance
+    return this.http.post<MeetingAttendance[]>(`/groups/calendars/${request.meetingId}/attendance`, request.attendance);
+  }
+
+  // ── Social Fund ───────────────────────────────────────────
+  // fineract-api: GET /datatables/dt_social_fund/{groupId}
+  // fineract-api: POST /datatables/dt_social_fund/{groupId}/contributions
+  // fineract-api: POST /datatables/dt_social_fund/{groupId}/disbursements
+
+  getSocialFund(): Observable<SocialFund> {
+    return this.http.get<SocialFund>('/datatables/dt_social_fund');
+  }
+
+  getSocialFundContributions(): Observable<SocialFundContribution[]> {
+    return this.http.get<SocialFundContribution[]>('/datatables/dt_social_fund/contributions');
+  }
+
+  recordSocialFundContribution(
+    contribution: Omit<SocialFundContribution, 'id' | 'createdAt'>
+  ): Observable<SocialFundContribution> {
+    return this.http.post<SocialFundContribution>('/datatables/dt_social_fund/contributions', contribution);
+  }
+
+  getSocialFundDisbursements(): Observable<SocialFundDisbursement[]> {
+    return this.http.get<SocialFundDisbursement[]>('/datatables/dt_social_fund/disbursements');
+  }
+
+  requestSocialFundDisbursement(request: SocialFundDisbursementRequest): Observable<SocialFundDisbursement> {
+    return this.http.post<SocialFundDisbursement>('/datatables/dt_social_fund/disbursements', request);
+  }
+
+  approveSocialFundDisbursement(disbursementId: number, approved: boolean): Observable<SocialFundDisbursement> {
+    return this.http.put<SocialFundDisbursement>(`/datatables/dt_social_fund/disbursements/${disbursementId}`, {
+      approved
+    });
+  }
+
+  // ── Share-Out ─────────────────────────────────────────────
+  // fineract-api: GET /datatables/dt_share_out/{cycleId}
+  // fineract-api: POST /datatables/dt_share_out/{cycleId}/calculate
+  // fineract-api: POST /datatables/dt_share_out/{cycleId}/distribute
+
+  getShareOut(cycleId: number): Observable<ShareOut> {
+    return this.http.get<ShareOut>(`/datatables/dt_share_out/${cycleId}`);
+  }
+
+  calculateShareOut(cycleId: number): Observable<ShareOut> {
+    return this.http.post<ShareOut>(`/datatables/dt_share_out/${cycleId}/calculate`, {});
+  }
+
+  getShareOutLineItems(shareOutId: number): Observable<ShareOutLineItem[]> {
+    return this.http.get<ShareOutLineItem[]>(`/datatables/dt_share_out/${shareOutId}/items`);
+  }
+
+  distributeShareOut(shareOutId: number): Observable<ShareOut> {
+    return this.http.post<ShareOut>(`/datatables/dt_share_out/${shareOutId}/distribute`, {});
+  }
+
+  // ── Loan Requests & Voting ─────────────────────────────────
+  // fineract-api: GET /datatables/dt_loan_request/{groupId}
+  // fineract-api: POST /datatables/dt_loan_request/{groupId}
+  // fineract-api: GET /datatables/dt_loan_vote/{loanRequestId}
+  // fineract-api: POST /datatables/dt_loan_vote/{loanRequestId}
+
+  getLoanRequests(): Observable<LoanRequest[]> {
+    return this.http.get<LoanRequest[]>('/datatables/dt_loan_request');
+  }
+
+  getLoanRequest(loanRequestId: number): Observable<LoanRequest> {
+    return this.http.get<LoanRequest>(`/datatables/dt_loan_request/${loanRequestId}`);
+  }
+
+  submitLoanRequest(request: Omit<LoanRequest, 'id' | 'status' | 'requestedAt'>): Observable<LoanRequest> {
+    return this.http.post<LoanRequest>('/datatables/dt_loan_request', request);
+  }
+
+  getLoanVotes(loanRequestId: number): Observable<LoanVote[]> {
+    return this.http.get<LoanVote[]>(`/datatables/dt_loan_vote/${loanRequestId}`);
+  }
+
+  castVote(request: CastVoteRequest): Observable<LoanVote> {
+    return this.http.post<LoanVote>('/datatables/dt_loan_vote', request);
+  }
+
+  /** Get vote tally for a loan request */
+  getVoteTally(loanRequestId: number): Observable<{
+    votesFor: number;
+    votesAgainst: number;
+    votesAbstain: number;
+    isApproved: boolean;
+  }> {
+    return this.http.get<{ votesFor: number; votesAgainst: number; votesAbstain: number; isApproved: boolean }>(
+      `/datatables/dt_loan_vote/${loanRequestId}/tally`
+    );
+  }
+
+  // ── Fines ─────────────────────────────────────────────────
+  // fineract-api: GET /clients/{clientId}/charges — List client charges
+  // fineract-api: POST /clients/{clientId}/charges — Add charge (fine)
+  // fineract-api: POST /clients/{clientId}/charges/{chargeId}?command=pay
+  // fineract-api: POST /clients/{clientId}/charges/{chargeId}?command=waive
+
+  getFines(): Observable<Fine[]> {
+    return this.http.get<Fine[]>('/datatables/dt_fine');
+  }
+
+  getMemberFines(memberId: number): Observable<Fine[]> {
+    return this.http.get<Fine[]>(`/datatables/dt_fine?memberId=${memberId}`);
+  }
+
+  imposeFine(request: ImposeFineRequest): Observable<Fine> {
+    return this.http.post<Fine>('/datatables/dt_fine', request);
+  }
+
+  payFine(fineId: number, paymentMethod: string, reference: string): Observable<Fine> {
+    // fineract-api: POST /clients/{clientId}/charges/{chargeId}?command=pay
+    return this.http.put<Fine>(`/datatables/dt_fine/${fineId}`, {
+      paid: true,
+      paidDate: new Date().toISOString(),
+      paymentMethod,
+      reference
+    });
+  }
+
+  waiveFine(fineId: number, reason: string): Observable<Fine> {
+    return this.http.put<Fine>(`/datatables/dt_fine/${fineId}`, {
+      waived: true,
+      reason
     });
   }
 }

@@ -27,7 +27,12 @@ import {
   ContributionFrequency,
   OverpaymentAction,
   ExitResolution,
-  PeriodClosureReason
+  PeriodClosureReason,
+  MemberRole,
+  MeetingStatus,
+  SocialFundPurpose,
+  LoanVoteResult,
+  ShareOutMethod
 } from './chama.enums';
 
 // ── Chama Configuration ───────────────────────────────────────
@@ -370,6 +375,221 @@ export interface ChamaDashboard {
   nextRecipient: ChamaMember | null;
   recentPayments: ContributionPayment[];
   recentAuditEvents: AuditEvent[];
+}
+
+// ── Member Roles ──────────────────────────────────────────
+// Maps to dt_member_role custom data table.
+// Different roles carry different permissions within the chama.
+export interface ChamaMemberRole {
+  id: number;
+  memberId: number;
+  memberName: string;
+  role: MemberRole;
+  assignedDate: string;
+  assignedBy: number;
+  isActive: boolean;
+}
+
+export interface AssignRoleRequest {
+  memberId: number;
+  role: MemberRole;
+  assignedBy: number;
+}
+
+// ── Meetings ────────────────────────────────────────────────
+// Maps to dt_meeting_record + dt_meeting_attendance custom data tables.
+// The chama workflow is meeting-centric: attendance → savings → decisions.
+export interface ChamaMeeting {
+  id: number;
+  chamaId: number;
+  meetingNumber: number;
+  meetingDate: string;
+  venue: string;
+  agenda: string;
+  status: MeetingStatus;
+  conductorId: number;
+  conductorName: string;
+  /** Total attendance count (members present) */
+  attendeesCount: number;
+  /** Total contributions collected during this meeting */
+  totalCollected: number;
+  /** Total loans disbursed during this meeting */
+  totalLoansDisbursed: number;
+  /** Meeting notes / minutes */
+  notes: string;
+  createdAt: string;
+  completedAt: string | null;
+}
+
+export interface MeetingAttendance {
+  id: number;
+  meetingId: number;
+  memberId: number;
+  memberName: string;
+  attended: boolean;
+  /** Fine amount if attendance was mandatory and member was absent */
+  fineAmount: number;
+  /** Reason for absence if provided */
+  absenceReason: string | null;
+}
+
+export interface RecordAttendanceRequest {
+  meetingId: number;
+  attendance: { memberId: number; attended: boolean; absenceReason?: string }[];
+}
+
+// ── Social Fund ─────────────────────────────────────────────
+// Maps to dt_social_fund custom data table.
+// Social fund is a separate pool within the chama for community welfare.
+// Members contribute a fixed amount to the social fund separately from
+// the main chama contribution. Disbursements are approved by members.
+export interface SocialFund {
+  id: number;
+  chamaId: number;
+  /** Current balance of the social fund */
+  balance: number;
+  /** Total contributions received */
+  totalContributions: number;
+  /** Total disbursements made */
+  totalDisbursements: number;
+  /** Per-member contribution amount to social fund */
+  contributionAmount: number;
+  isActive: boolean;
+}
+
+export interface SocialFundContribution {
+  id: number;
+  memberId: number;
+  memberName: string;
+  amount: number;
+  paymentDate: string;
+  providerTransactionId: string;
+  periodId: number;
+  createdAt: string;
+}
+
+export interface SocialFundDisbursement {
+  id: number;
+  memberId: number;
+  memberName: string;
+  amount: number;
+  purpose: SocialFundPurpose;
+  description: string;
+  disbursementDate: string;
+  approvedBy: number;
+  approvedByName: string;
+  approvedAt: string;
+  recipientAccountNumber: string;
+  recipientBankName: string;
+  status: PayoutStatus;
+  createdAt: string;
+}
+
+export interface SocialFundDisbursementRequest {
+  memberId: number;
+  amount: number;
+  purpose: SocialFundPurpose;
+  description: string;
+}
+
+// ── Share-Out ───────────────────────────────────────────────
+// Maps to dt_share_out custom data table.
+// At the end of a cycle, accumulated profits (from interest on loans,
+// late fees, penalties) are distributed among members.
+export interface ShareOut {
+  id: number;
+  cycleId: number;
+  /** Total surplus to distribute */
+  totalSurplus: number;
+  /** Method used for calculation */
+  calculationMethod: ShareOutMethod;
+  /** Per-member share amount */
+  perMemberShare: number;
+  /** Total active members at share-out time */
+  activeMemberCount: number;
+  /** Social fund balance at share-out */
+  socialFundBalance: number;
+  /** Status of the share-out */
+  status: PayoutStatus;
+  /** When the share-out was calculated */
+  calculatedAt: string;
+  /** When the share-out was distributed */
+  distributedAt: string | null;
+}
+
+export interface ShareOutLineItem {
+  id: number;
+  shareOutId: number;
+  memberId: number;
+  memberName: string;
+  /** Member's share of the surplus */
+  shareAmount: number;
+  /** Member's contribution percentage (for proportional calculation) */
+  contributionPercentage: number;
+  /** Whether this member received their share */
+  received: boolean;
+  receivedAt: string | null;
+}
+
+// ── Loan Voting ─────────────────────────────────────────────
+// Maps to dt_loan_vote custom data table.
+// Group members vote on loan applications within the chama.
+export interface LoanRequest {
+  id: number;
+  memberId: number;
+  memberName: string;
+  loanAmount: number;
+  purpose: string;
+  repaymentPeriodMonths: number;
+  proposedMonthlyRepayment: number;
+  collateralDescription: string;
+  status: LoanVoteResult;
+  requestedAt: string;
+}
+
+export interface LoanVote {
+  id: number;
+  loanRequestId: number;
+  voterId: number;
+  voterName: string;
+  result: LoanVoteResult;
+  notes: string;
+  votedAt: string;
+}
+
+export interface CastVoteRequest {
+  loanRequestId: number;
+  result: LoanVoteResult;
+  notes: string;
+}
+
+// ── Fines ──────────────────────────────────────────────────
+// Separate from late payment fees. Fines are imposed for:
+// - Late attendance
+// - Missed meetings
+// - Late repayment (beyond grace period)
+// - Disruptive behavior
+export interface Fine {
+  id: number;
+  memberId: number;
+  memberName: string;
+  amount: number;
+  reason: string;
+  /** Which meeting the fine was imposed at */
+  meetingId: number | null;
+  /** Whether the fine has been paid */
+  paid: boolean;
+  paidDate: string | null;
+  imposedBy: number;
+  imposedByName: string;
+  imposedAt: string;
+}
+
+export interface ImposeFineRequest {
+  memberId: number;
+  amount: number;
+  reason: string;
+  meetingId?: number;
 }
 
 // ── API Response Wrappers ─────────────────────────────────────
