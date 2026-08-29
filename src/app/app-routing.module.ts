@@ -29,6 +29,10 @@ const routes: Routes = [
     loadChildren: () => import('./accounting/accounting.module').then((m) => m.AccountingModule)
   },
   {
+    path: 'chama',
+    loadChildren: () => import('./chama/chama.module').then((m) => m.ChamaModule)
+  },
+  {
     path: 'centers',
     loadChildren: () => import('./centers/centers.module').then((m) => m.CentersModule)
   },

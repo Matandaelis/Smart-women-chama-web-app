@@ -1,0 +1,170 @@
+<!--
+  Copyright since 2025 Mifos Initiative
+
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+-->
+
+<!--
+  Copyright since 2025 Mifos Initiative
+
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+-->
+
+<div class="chama-member-view">
+  <!-- Member Header Card -->
+  <mat-card class="m-b-16">
+    <mat-card-header>
+      <mat-card-title> {{ member?.firstName }} {{ member?.lastName }} </mat-card-title>
+      <mat-card-subtitle> {{ 'Chama.MembershipNo' | translate }}: {{ member?.membershipNumber }} </mat-card-subtitle>
+      <div class="card-actions">
+        <a mat-icon-button [routerLink]="['edit']" matTooltip="Edit">
+          <mat-icon>edit</mat-icon>
+        </a>
+      </div>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="layout-row-wrap gap-24px m-t-16">
+        <div class="member-field">
+          <span class="field-label">{{ 'Chama.Status' | translate }}</span>
+          <mat-chip [color]="member?.status === 'ACTIVE' ? 'primary' : ''" selected>
+            {{ 'Chama.MemberStatus.' + member?.status | translate }}
+          </mat-chip>
+        </div>
+        <div class="member-field">
+          <span class="field-label">{{ 'Chama.Phone' | translate }}</span>
+          <span class="field-value">{{ member?.phoneNumber }}</span>
+        </div>
+        <div class="member-field">
+          <span class="field-label">{{ 'Chama.Email' | translate }}</span>
+          <span class="field-value">{{ member?.email }}</span>
+        </div>
+        <div class="member-field">
+          <span class="field-label">{{ 'Chama.NationalId' | translate }}</span>
+          <span class="field-value">{{ member?.nationalId }}</span>
+        </div>
+        <div class="member-field">
+          <span class="field-label">{{ 'Chama.JoinedDate' | translate }}</span>
+          <span class="field-value">{{ member?.joinedDate | date: 'mediumDate' }}</span>
+        </div>
+        <div class="member-field" *ngIf="member?.currentPosition">
+          <span class="field-label">{{ 'Chama.RotationPosition' | translate }}</span>
+          <span class="field-value">{{ member?.currentPosition }}</span>
+        </div>
+      </div>
+    </mat-card-content>
+    <mat-card-actions>
+      <button mat-raised-button color="warn" *ngIf="canSuspend()" (click)="suspend()">
+        <mat-icon>block</mat-icon>
+        {{ 'Chama.Suspend' | translate }}
+      </button>
+      <button mat-raised-button color="accent" *ngIf="canReactivate()" (click)="reactivate()">
+        <mat-icon>check_circle</mat-icon>
+        {{ 'Chama.Reactivate' | translate }}
+      </button>
+      <button mat-raised-button *ngIf="canExit()" (click)="exit()">
+        <mat-icon>exit_to_app</mat-icon>
+        {{ 'Chama.Exit' | translate }}
+      </button>
+    </mat-card-actions>
+  </mat-card>
+
+  <!-- Tabs -->
+  <mat-card>
+    <mat-tab-group>
+      <!-- Financial Summary Tab -->
+      <mat-tab [label]="'Chama.FinancialSummary' | translate">
+        <div class="tab-content">
+          <div class="layout-row-wrap gap-24px m-b-16">
+            <mat-card class="stat-card">
+              <mat-card-content>
+                <span class="stat-label">{{ 'Chama.TotalContributions' | translate }}</span>
+                <span class="stat-value"> KES {{ member?.totalContributionsMade | number: '1.0-0' }} </span>
+              </mat-card-content>
+            </mat-card>
+            <mat-card class="stat-card">
+              <mat-card-content>
+                <span class="stat-label">{{ 'Chama.TotalPayouts' | translate }}</span>
+                <span class="stat-value"> KES {{ member?.totalPayoutsReceived | number: '1.0-0' }} </span>
+              </mat-card-content>
+            </mat-card>
+            <mat-card class="stat-card">
+              <mat-card-content>
+                <span class="stat-label">{{ 'Chama.OutstandingBalance' | translate }}</span>
+                <span class="stat-value" [class.red]="member?.outstandingBalance > 0">
+                  KES {{ member?.outstandingBalance | number: '1.0-0' }}
+                </span>
+              </mat-card-content>
+            </mat-card>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Contribution History Tab -->
+      <mat-tab [label]="'Chama.ContributionHistory' | translate">
+        <div class="tab-content">
+          <div *ngIf="contributions.length === 0" class="no-data">
+            {{ 'Chama.NoContributions' | translate }}
+          </div>
+          <table *ngIf="contributions.length > 0" mat-table [dataSource]="contributions" class="w-100">
+            <ng-container matColumnDef="periodNumber">
+              <th mat-header-cell *matHeaderCellDef>{{ 'Chama.Period' | translate }}</th>
+              <td mat-cell *matCellDef="let c">Period {{ c.periodNumber }}</td>
+            </ng-container>
+            <ng-container matColumnDef="amountDue">
+              <th mat-header-cell *matHeaderCellDef>{{ 'Chama.AmountDue' | translate }}</th>
+              <td mat-cell *matCellDef="let c">KES {{ c.amountDue | number: '1.0-0' }}</td>
+            </ng-container>
+            <ng-container matColumnDef="amountPaid">
+              <th mat-header-cell *matHeaderCellDef>{{ 'Chama.AmountPaid' | translate }}</th>
+              <td mat-cell *matCellDef="let c">KES {{ c.amountPaid | number: '1.0-0' }}</td>
+            </ng-container>
+            <ng-container matColumnDef="outstanding">
+              <th mat-header-cell *matHeaderCellDef>{{ 'Chama.Outstanding' | translate }}</th>
+              <td mat-cell *matCellDef="let c">
+                <span [class.red]="c.outstandingAmount > 0"> KES {{ c.outstandingAmount | number: '1.0-0' }} </span>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>{{ 'Chama.Status' | translate }}</th>
+              <td mat-cell *matCellDef="let c">
+                {{ 'Chama.ContributionStatus.' + c.status | translate }}
+              </td>
+            </ng-container>
+            <tr
+              mat-header-row
+              *matHeaderRowDef="['periodNumber', 'amountDue', 'amountPaid', 'outstanding', 'status']"
+            ></tr>
+            <tr
+              mat-row
+              *matRowDef="let row; columns: ['periodNumber', 'amountDue', 'amountPaid', 'outstanding', 'status']"
+            ></tr>
+          </table>
+        </div>
+      </mat-tab>
+
+      <!-- Payout Account Tab -->
+      <mat-tab [label]="'Chama.PayoutAccount' | translate">
+        <div class="tab-content">
+          <div class="layout-row-wrap gap-24px">
+            <div class="member-field">
+              <span class="field-label">{{ 'Chama.BankName' | translate }}</span>
+              <span class="field-value">{{ member?.payoutAccountBank }}</span>
+            </div>
+            <div class="member-field">
+              <span class="field-label">{{ 'Chama.AccountNumber' | translate }}</span>
+              <span class="field-value">{{ member?.payoutAccountNumber }}</span>
+            </div>
+            <div class="member-field">
+              <span class="field-label">{{ 'Chama.AccountName' | translate }}</span>
+              <span class="field-value">{{ member?.payoutAccountName }}</span>
+            </div>
+          </div>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  </mat-card>
+</div>

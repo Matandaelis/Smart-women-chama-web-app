@@ -1,0 +1,102 @@
+<!--
+  Copyright since 2025 Mifos Initiative
+
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+-->
+
+<!--
+  Copyright since 2025 Mifos Initiative
+
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+-->
+
+<mat-card>
+  <mat-card-header>
+    <mat-card-title>{{ 'Chama.Periods' | translate }}</mat-card-title>
+    <mat-card-subtitle *ngIf="activeCycle">
+      {{ 'Chama.Cycle' | translate }} {{ activeCycle.cycleNumber }} ({{
+        'Chama.CycleStatus.' + activeCycle.status | translate
+      }})
+    </mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    <table mat-table [dataSource]="periods" class="w-100">
+      <!-- Period Number Column -->
+      <ng-container matColumnDef="periodNumber">
+        <th mat-header-cell *matHeaderCellDef>{{ 'Chama.Period' | translate }}</th>
+        <td mat-cell *matCellDef="let period">{{ 'Chama.Period' | translate }} {{ period.periodNumber }}</td>
+      </ng-container>
+
+      <!-- Recipient Column -->
+      <ng-container matColumnDef="recipient">
+        <th mat-header-cell *matHeaderCellDef>{{ 'Chama.Recipient' | translate }}</th>
+        <td mat-cell *matCellDef="let period">{{ period.recipientName }}</td>
+      </ng-container>
+
+      <!-- Start Date Column -->
+      <ng-container matColumnDef="startDate">
+        <th mat-header-cell *matHeaderCellDef>{{ 'Chama.StartDate' | translate }}</th>
+        <td mat-cell *matCellDef="let period">{{ period.startDate | date: 'mediumDate' }}</td>
+      </ng-container>
+
+      <!-- End Date Column -->
+      <ng-container matColumnDef="endDate">
+        <th mat-header-cell *matHeaderCellDef>{{ 'Chama.EndDate' | translate }}</th>
+        <td mat-cell *matCellDef="let period">{{ period.endDate | date: 'mediumDate' }}</td>
+      </ng-container>
+
+      <!-- Expected Pool Column -->
+      <ng-container matColumnDef="expectedPool">
+        <th mat-header-cell *matHeaderCellDef>{{ 'Chama.ExpectedPool' | translate }}</th>
+        <td mat-cell *matCellDef="let period">KES {{ period.expectedPool | number: '1.0-0' }}</td>
+      </ng-container>
+
+      <!-- Collected Pool Column -->
+      <ng-container matColumnDef="collectedPool">
+        <th mat-header-cell *matHeaderCellDef>{{ 'Chama.CollectedPool' | translate }}</th>
+        <td mat-cell *matCellDef="let period">KES {{ period.collectedPool | number: '1.0-0' }}</td>
+      </ng-container>
+
+      <!-- Status Column -->
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef>{{ 'Chama.Status' | translate }}</th>
+        <td mat-cell *matCellDef="let period">
+          <mat-chip [color]="getStatusColor(period.status)" selected>
+            {{ 'Chama.PeriodStatus.' + period.status | translate }}
+          </mat-chip>
+        </td>
+      </ng-container>
+
+      <!-- Payout Status Column -->
+      <ng-container matColumnDef="payoutStatus">
+        <th mat-header-cell *matHeaderCellDef>{{ 'Chama.PayoutStatus' | translate }}</th>
+        <td mat-cell *matCellDef="let period">
+          {{ 'Chama.PayoutStatusValue.' + period.payoutStatus | translate }}
+        </td>
+      </ng-container>
+
+      <!-- Actions Column -->
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef="let period">
+          <a mat-icon-button [routerLink]="[period.id]" matTooltip="View">
+            <mat-icon>visibility</mat-icon>
+          </a>
+          <button mat-icon-button *ngIf="canOpenPeriod(period)" matTooltip="Open" (click)="openPeriod(period)">
+            <mat-icon>play_arrow</mat-icon>
+          </button>
+          <button mat-icon-button *ngIf="canClosePeriod(period)" matTooltip="Close" (click)="closePeriod(period)">
+            <mat-icon>stop</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+    </table>
+  </mat-card-content>
+</mat-card>
