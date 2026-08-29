@@ -1,0 +1,6 @@
+interface:
+  display_name: "Smart Women Chama Web App"
+  short_description: "Repo-specific patterns and workflows for Smart-women-chama-web-app"
+  default_prompt: "Use the Smart-women-chama-web-app repo skill to follow existing architecture, testing, and workflow conventions."
+policy:
+  allow_implicit_invocation: true
