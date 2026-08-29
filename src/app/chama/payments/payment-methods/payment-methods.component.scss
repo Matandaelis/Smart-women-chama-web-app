@@ -1,0 +1,156 @@
+/**
+ * Copyright since 2025 Mifos Initiative
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
+/**
+ * Copyright since 2025 Mifos Initiative
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
+.payment-methods-card {
+  margin: 16px;
+}
+
+.providers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 100%));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.provider-card {
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgb(0 0 0 / 15%);
+    transform: translateY(-2px);
+  }
+
+  &.active {
+    border-left: 4px solid #4caf50;
+  }
+
+  &.configured {
+    border-left: 4px solid #2196f3;
+  }
+
+  &.inactive {
+    border-left: 4px solid #9e9e9e;
+    opacity: 0.8;
+  }
+}
+
+.provider-description {
+  color: rgb(0 0 0 / 60%);
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.provider-features {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.supported-methods {
+  margin-bottom: 12px;
+
+  .methods-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: rgb(0 0 0 / 54%);
+    margin-right: 4px;
+  }
+
+  mat-chip {
+    font-size: 11px;
+    min-height: 24px;
+  }
+}
+
+.provider-status {
+  mat-chip {
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .status-active {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+  }
+
+  .status-configured {
+    background-color: #e3f2fd;
+    color: #1565c0;
+  }
+
+  .status-inactive {
+    background-color: #f5f5f5;
+    color: #757575;
+  }
+}
+
+.integration-guide-card {
+  margin: 16px;
+}
+
+.guide-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-top: 16px;
+}
+
+.guide-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+
+  mat-icon {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    font-size: 20px;
+    border-radius: 50%;
+    background-color: #e3f2fd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  h4 {
+    margin: 0 0 4px;
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  p {
+    margin: 0 0 8px;
+    font-size: 13px;
+    color: rgb(0 0 0 / 60%);
+    line-height: 1.5;
+  }
+
+  code {
+    font-size: 12px;
+    padding: 2px 6px;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+  }
+}
+
+@media (width < 768px) {
+  .providers-grid {
+    grid-template-columns: 100%;
+  }
+}

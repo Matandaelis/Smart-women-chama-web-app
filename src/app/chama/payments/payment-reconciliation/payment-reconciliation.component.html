@@ -1,0 +1,191 @@
+<!--
+  Copyright since 2025 Mifos Initiative
+
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+-->
+
+<mat-card class="reconciliation-card">
+  <mat-card-header>
+    <mat-icon mat-card-avatar>fact_check</mat-icon>
+    <mat-card-title>{{ 'Reconciliation.Title' | translate }}</mat-card-title>
+    <mat-card-subtitle>{{ 'Reconciliation.Description' | translate }}</mat-card-subtitle>
+  </mat-card-header>
+
+  <mat-card-content>
+    <!-- Filters -->
+    <div class="filter-row">
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'Reconciliation.Provider' | translate }}</mat-label>
+        <mat-select [(ngModel)]="selectedProvider" (selectionChange)="loadReconciliation()">
+          @for (option of providerOptions; track option.value) {
+            <mat-option [value]="option.value">{{ option.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'Reconciliation.StartDate' | translate }}</mat-label>
+        <input matInput [matDatepicker]="startPicker" [(ngModel)]="startDate" />
+        <mat-datepicker-toggle matIconSuffix [for]="startPicker"></mat-datepicker-toggle>
+        <mat-datepicker #startPicker></mat-datepicker>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'Reconciliation.EndDate' | translate }}</mat-label>
+        <input matInput [matDatepicker]="endPicker" [(ngModel)]="endDate" />
+        <mat-datepicker-toggle matIconSuffix [for]="endPicker"></mat-datepicker-toggle>
+        <mat-datepicker #endPicker></mat-datepicker>
+      </mat-form-field>
+
+      <button mat-raised-button color="primary" (click)="loadReconciliation()">
+        <mat-icon>search</mat-icon>
+        {{ 'Reconciliation.Run' | translate }}
+      </button>
+    </div>
+
+    @if (isLoading) {
+      <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+    }
+
+    <!-- Summary Cards -->
+    @if (summary) {
+      <div class="summary-cards">
+        <mat-card class="summary-card matched">
+          <mat-card-content>
+            <mat-icon>check_circle</mat-icon>
+            <div class="summary-value">{{ summary.matchedCount }}</div>
+            <div class="summary-label">{{ 'Reconciliation.Matched' | translate }}</div>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="summary-card discrepancy">
+          <mat-card-content>
+            <mat-icon>warning</mat-icon>
+            <div class="summary-value">
+              {{ summary.internalOnlyCount + summary.providerOnlyCount + summary.amountMismatchCount }}
+            </div>
+            <div class="summary-label">{{ 'Reconciliation.Discrepancies' | translate }}</div>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="summary-card amount">
+          <mat-card-content>
+            <mat-icon>attach_money</mat-icon>
+            <div class="summary-value">KES {{ summary.discrepancyAmount | number: '1.0-0' }}</div>
+            <div class="summary-label">{{ 'Reconciliation.DiscrepancyAmount' | translate }}</div>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="summary-card duplicates">
+          <mat-card-content>
+            <mat-icon>content_copy</mat-icon>
+            <div class="summary-value">{{ summary.duplicateCount }}</div>
+            <div class="summary-label">{{ 'Reconciliation.Duplicates' | translate }}</div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+      <!-- Reconciliation Table -->
+      <div class="reconciliation-table">
+        <table mat-table [dataSource]="records" class="full-width">
+          <ng-container matColumnDef="providerTransactionId">
+            <th mat-header-cell *matHeaderCellDef>
+              {{ 'Reconciliation.ProviderRef' | translate }}
+            </th>
+            <td mat-cell *matCellDef="let record">
+              {{ record.providerTransactionId }}
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="provider">
+            <th mat-header-cell *matHeaderCellDef>
+              {{ 'Reconciliation.Provider' | translate }}
+            </th>
+            <td mat-cell *matCellDef="let record">
+              <mat-chip>{{ record.provider }}</mat-chip>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="internalAmount">
+            <th mat-header-cell *matHeaderCellDef>
+              {{ 'Reconciliation.InternalAmount' | translate }}
+            </th>
+            <td mat-cell *matCellDef="let record">KES {{ record.internalAmount | number: '1.2-2' }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="providerAmount">
+            <th mat-header-cell *matHeaderCellDef>
+              {{ 'Reconciliation.ProviderAmount' | translate }}
+            </th>
+            <td mat-cell *matCellDef="let record">KES {{ record.providerAmount | number: '1.2-2' }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="amountsMatch">
+            <th mat-header-cell *matHeaderCellDef>
+              {{ 'Reconciliation.Match' | translate }}
+            </th>
+            <td mat-cell *matCellDef="let record">
+              @if (record.amountsMatch) {
+                <mat-icon color="primary">check_circle</mat-icon>
+              } @else {
+                <mat-icon color="warn">cancel</mat-icon>
+              }
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>
+              {{ 'Reconciliation.Status' | translate }}
+            </th>
+            <td mat-cell *matCellDef="let record">
+              <mat-chip [color]="statusColors[record.status]" selected>
+                {{ record.status }}
+              </mat-chip>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="payerReference">
+            <th mat-header-cell *matHeaderCellDef>
+              {{ 'Reconciliation.PayerRef' | translate }}
+            </th>
+            <td mat-cell *matCellDef="let record">
+              {{ record.payerReference }}
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="providerTimestamp">
+            <th mat-header-cell *matHeaderCellDef>
+              {{ 'Reconciliation.ProviderDate' | translate }}
+            </th>
+            <td mat-cell *matCellDef="let record">
+              {{ record.providerTimestamp | date: 'medium' }}
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef>
+              {{ 'Reconciliation.Actions' | translate }}
+            </th>
+            <td mat-cell *matCellDef="let record">
+              @if (record.status !== 'MATCHED' && record.status !== 'RESOLVED') {
+                <button
+                  mat-icon-button
+                  color="primary"
+                  (click)="resolveRecord(record)"
+                  matTooltip="{{ 'Reconciliation.Resolve' | translate }}"
+                >
+                  <mat-icon>check_circle</mat-icon>
+                </button>
+              }
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+        </table>
+      </div>
+    }
+  </mat-card-content>
+</mat-card>

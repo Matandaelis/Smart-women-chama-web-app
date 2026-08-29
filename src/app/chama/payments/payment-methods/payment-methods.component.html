@@ -1,0 +1,114 @@
+<!--
+  Copyright since 2025 Mifos Initiative
+
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+-->
+
+<mat-card class="payment-methods-card">
+  <mat-card-header>
+    <mat-icon mat-card-avatar>account_balance_wallet</mat-icon>
+    <mat-card-title>{{ 'Payment.Providers' | translate }}</mat-card-title>
+    <mat-card-subtitle>{{ 'Payment.ProvidersDescription' | translate }}</mat-card-subtitle>
+  </mat-card-header>
+
+  <mat-card-content>
+    <div class="providers-grid">
+      @for (provider of providers; track provider.provider) {
+        <mat-card
+          class="provider-card"
+          [class.active]="provider.status === 'ACTIVE'"
+          [class.configured]="provider.status === 'CONFIGURED'"
+          [class.inactive]="provider.status === 'INACTIVE'"
+        >
+          <mat-card-header>
+            <mat-icon mat-card-avatar [matTooltip]="provider.description">
+              {{ provider.icon }}
+            </mat-icon>
+            <mat-card-title>{{ provider.name }}</mat-card-title>
+            <mat-card-subtitle>{{ provider.fee }}</mat-card-subtitle>
+          </mat-card-header>
+
+          <mat-card-content>
+            <p class="provider-description">{{ provider.description }}</p>
+
+            <div class="provider-features">
+              @if (provider.canCollect) {
+                <mat-chip-set>
+                  <mat-chip highlighted color="primary">
+                    <mat-icon matChipAvatar>arrow_downward</mat-icon>
+                    {{ 'Payment.Collect' | translate }}
+                  </mat-chip>
+                </mat-chip-set>
+              }
+              @if (provider.canDisburse) {
+                <mat-chip-set>
+                  <mat-chip highlighted color="accent">
+                    <mat-icon matChipAvatar>arrow_upward</mat-icon>
+                    {{ 'Payment.Disburse' | translate }}
+                  </mat-chip>
+                </mat-chip-set>
+              }
+            </div>
+
+            <div class="supported-methods">
+              <span class="methods-label">{{ 'Payment.Methods' | translate }}:</span>
+              @for (method of provider.methods; track method) {
+                <mat-chip>{{ method }}</mat-chip>
+              }
+            </div>
+
+            <div class="provider-status">
+              <mat-chip [class]="'status-' + provider.status.toLowerCase()">
+                {{ provider.status }}
+              </mat-chip>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      }
+    </div>
+  </mat-card-content>
+</mat-card>
+
+<!-- Integration Guide -->
+<mat-card class="integration-guide-card">
+  <mat-card-header>
+    <mat-icon mat-card-avatar>menu_book</mat-icon>
+    <mat-card-title>{{ 'Payment.IntegrationGuide' | translate }}</mat-card-title>
+  </mat-card-header>
+  <mat-card-content>
+    <div class="guide-steps">
+      <div class="guide-step">
+        <mat-icon color="primary">1</mat-icon>
+        <div>
+          <h4>{{ 'Payment.Step1Title' | translate }}</h4>
+          <p>{{ 'Payment.Step1Description' | translate }}</p>
+          <code>developer.safaricom.co.ke</code>
+        </div>
+      </div>
+      <div class="guide-step">
+        <mat-icon color="primary">2</mat-icon>
+        <div>
+          <h4>{{ 'Payment.Step2Title' | translate }}</h4>
+          <p>{{ 'Payment.Step2Description' | translate }}</p>
+          <code>{{ 'Payment.Step2Code' | translate }}</code>
+        </div>
+      </div>
+      <div class="guide-step">
+        <mat-icon color="primary">3</mat-icon>
+        <div>
+          <h4>{{ 'Payment.Step3Title' | translate }}</h4>
+          <p>{{ 'Payment.Step3Description' | translate }}</p>
+        </div>
+      </div>
+      <div class="guide-step">
+        <mat-icon color="primary">4</mat-icon>
+        <div>
+          <h4>{{ 'Payment.Step4Title' | translate }}</h4>
+          <p>{{ 'Payment.Step4Description' | translate }}</p>
+        </div>
+      </div>
+    </div>
+  </mat-card-content>
+</mat-card>
