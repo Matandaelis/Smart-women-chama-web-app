@@ -1,0 +1,176 @@
+<!--
+  Copyright since 2025 Mifos Initiative
+
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+-->
+
+<div class="chama-dashboard">
+  <!-- Header -->
+  <mat-card class="m-b-16">
+    <mat-card-header>
+      <mat-card-title>{{ 'Chama.Dashboard' | translate }}</mat-card-title>
+      <mat-card-subtitle>{{ 'Chama.WelcomeMessage' | translate }}</mat-card-subtitle>
+    </mat-card-header>
+  </mat-card>
+
+  <!-- Summary Cards Row -->
+  <div class="layout-row-wrap gap-16px m-b-16">
+    <!-- Active Members Card -->
+    <mat-card class="summary-card flex-25">
+      <mat-card-header>
+        <mat-icon mat-card-avatar class="summary-icon members-icon">groups</mat-icon>
+        <mat-card-title>{{ 'Chama.ActiveMembers' | translate }}</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <span class="summary-value">{{ dashboard?.activeMembers || 0 }}</span>
+        <span class="summary-detail">
+          {{ 'Chama.of' | translate }} {{ dashboard?.totalMembers || 0 }}
+          {{ 'Chama.total' | translate }}
+        </span>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Current Period Card -->
+    <mat-card class="summary-card flex-25">
+      <mat-card-header>
+        <mat-icon mat-card-avatar class="summary-icon period-icon">event</mat-icon>
+        <mat-card-title>{{ 'Chama.CurrentPeriod' | translate }}</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <span class="summary-value">
+          {{ 'Chama.Period' | translate }} {{ dashboard?.currentPeriod?.periodNumber || '-' }}
+        </span>
+        <span class="summary-detail">
+          {{ dashboard?.currentPeriod?.status || ('Chama.NoActivePeriod' | translate) }}
+        </span>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Collected Pool Card -->
+    <mat-card class="summary-card flex-25">
+      <mat-card-header>
+        <mat-icon mat-card-avatar class="summary-icon collected-icon">account_balance_wallet</mat-icon>
+        <mat-card-title>{{ 'Chama.CollectedPool' | translate }}</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <span class="summary-value"> KES {{ dashboard?.currentPeriod?.collectedPool | number: '1.0-0' || '0' }} </span>
+        <span class="summary-detail">
+          {{ 'Chama.of' | translate }}
+          KES {{ dashboard?.currentPeriod?.expectedPool | number: '1.0-0' || '0' }}
+          {{ 'Chama.expected' | translate }}
+        </span>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Outstanding Amount Card -->
+    <mat-card class="summary-card flex-25">
+      <mat-card-header>
+        <mat-icon mat-card-avatar class="summary-icon outstanding-icon">warning</mat-icon>
+        <mat-card-title>{{ 'Chama.Outstanding' | translate }}</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <span class="summary-value"> KES {{ dashboard?.outstandingAmount | number: '1.0-0' || '0' }} </span>
+        <span class="summary-detail">{{ 'Chama.PendingCollections' | translate }}</span>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Quick Actions Row -->
+  <mat-card class="m-b-16">
+    <mat-card-header>
+      <mat-card-title>{{ 'Chama.QuickActions' | translate }}</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="layout-row-wrap gap-16px">
+        <a mat-raised-button color="primary" routerLink="members">
+          <mat-icon>m_group</mat-icon>
+          {{ 'Chama.ManageMembers' | translate }}
+        </a>
+        <a mat-raised-button color="primary" routerLink="periods">
+          <mat-icon>date_range</mat-icon>
+          {{ 'Chama.ViewPeriods' | translate }}
+        </a>
+        <a mat-raised-button color="primary" routerLink="contributions">
+          <mat-icon>savings</mat-icon>
+          {{ 'Chama.Contributions' | translate }}
+        </a>
+        <a mat-raised-button color="primary" routerLink="payouts">
+          <mat-icon>payments</mat-icon>
+          {{ 'Chama.Payouts' | translate }}
+        </a>
+        <a mat-raised-button color="primary" routerLink="reconciliation">
+          <mat-icon>fact_check</mat-icon>
+          {{ 'Chama.Reconciliation' | translate }}
+        </a>
+        <a mat-raised-button color="primary" routerLink="governance">
+          <mat-icon>gavel</mat-icon>
+          {{ 'Chama.Governance' | translate }}
+        </a>
+        <a mat-raised-button color="accent" routerLink="configuration">
+          <mat-icon>settings</mat-icon>
+          {{ 'Chama.Configuration' | translate }}
+        </a>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Current Period Details -->
+  <div class="layout-row-wrap gap-16px m-b-16">
+    <!-- Next Recipient -->
+    <mat-card class="flex-50">
+      <mat-card-header>
+        <mat-card-title>{{ 'Chama.NextRecipient' | translate }}</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div *ngIf="dashboard?.nextRecipient" class="recipient-info">
+          <div class="layout-row align-center-start gap-16px">
+            <mat-icon class="recipient-icon">person</mat-icon>
+            <div>
+              <div class="recipient-name">
+                {{ dashboard?.nextRecipient?.firstName }}
+                {{ dashboard?.nextRecipient?.lastName }}
+              </div>
+              <div class="recipient-detail">
+                {{ 'Chama.MembershipNo' | translate }}:
+                {{ dashboard?.nextRecipient?.membershipNumber }}
+              </div>
+              <div class="recipient-detail">
+                {{ 'Chama.Position' | translate }}:
+                {{ dashboard?.nextRecipient?.currentPosition }}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div *ngIf="!dashboard?.nextRecipient" class="no-data">
+          {{ 'Chama.NoNextRecipient' | translate }}
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Recent Audit Events -->
+    <mat-card class="flex-50">
+      <mat-card-header>
+        <mat-card-title>{{ 'Chama.RecentActivity' | translate }}</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div *ngIf="dashboard?.recentAuditEvents?.length; else noActivity" class="audit-list">
+          <div
+            *ngFor="let event of dashboard?.recentAuditEvents?.slice(0, 5)"
+            class="audit-item layout-row align-center-start gap-8px"
+          >
+            <mat-icon class="audit-icon">history</mat-icon>
+            <div class="flex">
+              <div class="audit-action">{{ event.action }}</div>
+              <div class="audit-time">{{ event.timestamp | date: 'medium' }}</div>
+            </div>
+          </div>
+        </div>
+        <ng-template #noActivity>
+          <div class="no-data">{{ 'Chama.NoRecentActivity' | translate }}</div>
+        </ng-template>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

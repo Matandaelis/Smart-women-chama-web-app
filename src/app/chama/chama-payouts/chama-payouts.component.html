@@ -1,0 +1,94 @@
+<!--
+  Copyright since 2025 Mifos Initiative
+
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+-->
+
+<!--
+  Copyright since 2025 Mifos Initiative
+
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+-->
+
+<mat-card>
+  <mat-card-header>
+    <mat-card-title>{{ 'Chama.Payouts' | translate }}</mat-card-title>
+  </mat-card-header>
+  <mat-card-content>
+    <table mat-table [dataSource]="payouts" class="w-100">
+      <!-- Recipient Column -->
+      <ng-container matColumnDef="recipient">
+        <th mat-header-cell *matHeaderCellDef>{{ 'Chama.Recipient' | translate }}</th>
+        <td mat-cell *matCellDef="let payout">{{ payout.recipientName }}</td>
+      </ng-container>
+
+      <!-- Amount Column -->
+      <ng-container matColumnDef="amount">
+        <th mat-header-cell *matHeaderCellDef>{{ 'Chama.Amount' | translate }}</th>
+        <td mat-cell *matCellDef="let payout">KES {{ payout.amount | number: '1.0-0' }}</td>
+      </ng-container>
+
+      <!-- Status Column -->
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef>{{ 'Chama.Status' | translate }}</th>
+        <td mat-cell *matCellDef="let payout">
+          <mat-chip [color]="getStatusColor(payout.status)" selected>
+            {{ 'Chama.PayoutStatusValue.' + payout.status | translate }}
+          </mat-chip>
+        </td>
+      </ng-container>
+
+      <!-- Provider Transaction ID Column -->
+      <ng-container matColumnDef="providerTransactionId">
+        <th mat-header-cell *matHeaderCellDef>{{ 'Chama.TransactionId' | translate }}</th>
+        <td mat-cell *matCellDef="let payout">
+          {{ payout.providerTransactionId || '-' }}
+        </td>
+      </ng-container>
+
+      <!-- Approved By Column -->
+      <ng-container matColumnDef="approvedBy">
+        <th mat-header-cell *matHeaderCellDef>{{ 'Chama.ApprovedBy' | translate }}</th>
+        <td mat-cell *matCellDef="let payout">
+          {{ payout.approvedAt ? (payout.approvedAt | date: 'medium') : '-' }}
+        </td>
+      </ng-container>
+
+      <!-- Completed At Column -->
+      <ng-container matColumnDef="completedAt">
+        <th mat-header-cell *matHeaderCellDef>{{ 'Chama.CompletedAt' | translate }}</th>
+        <td mat-cell *matCellDef="let payout">
+          {{ payout.completedAt ? (payout.completedAt | date: 'medium') : '-' }}
+        </td>
+      </ng-container>
+
+      <!-- Actions Column -->
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef="let payout">
+          <button mat-icon-button *ngIf="canApprove(payout)" matTooltip="Approve" (click)="approvePayout(payout)">
+            <mat-icon>check_circle</mat-icon>
+          </button>
+          <button mat-icon-button *ngIf="canExecute(payout)" matTooltip="Execute" (click)="executePayout(payout)">
+            <mat-icon>send</mat-icon>
+          </button>
+          <button
+            mat-icon-button
+            matTooltip="Reverse"
+            (click)="reversePayout(payout)"
+            [disabled]="payout.status === 'COMPLETED'"
+          >
+            <mat-icon>undo</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+    </table>
+  </mat-card-content>
+</mat-card>

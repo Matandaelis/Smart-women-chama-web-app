@@ -1,0 +1,110 @@
+<!--
+  Copyright since 2025 Mifos Initiative
+
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+-->
+
+<!--
+  Copyright since 2025 Mifos Initiative
+
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+-->
+
+<mat-card>
+  <mat-card-header>
+    <mat-card-title>{{ 'Chama.AddMember' | translate }}</mat-card-title>
+  </mat-card-header>
+  <mat-card-content>
+    <form [formGroup]="memberForm" (ngSubmit)="onSubmit()">
+      <div class="layout-row-wrap gap-16px">
+        <mat-form-field appearance="fill" class="flex-48">
+          <mat-label>{{ 'Chama.FirstName' | translate }}</mat-label>
+          <input matInput formControlName="firstName" required />
+          <mat-error *ngIf="memberForm.get('firstName')?.hasError('required')">
+            {{ 'Chama.Required' | translate }}
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" class="flex-48">
+          <mat-label>{{ 'Chama.LastName' | translate }}</mat-label>
+          <input matInput formControlName="lastName" required />
+          <mat-error *ngIf="memberForm.get('lastName')?.hasError('required')">
+            {{ 'Chama.Required' | translate }}
+          </mat-error>
+        </mat-form-field>
+      </div>
+
+      <div class="layout-row-wrap gap-16px">
+        <mat-form-field appearance="fill" class="flex-48">
+          <mat-label>{{ 'Chama.PhoneNumber' | translate }}</mat-label>
+          <input matInput formControlName="phoneNumber" required />
+          <mat-error *ngIf="memberForm.get('phoneNumber')?.hasError('required')">
+            {{ 'Chama.Required' | translate }}
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" class="flex-48">
+          <mat-label>{{ 'Chama.Email' | translate }}</mat-label>
+          <input matInput formControlName="email" type="email" required />
+          <mat-error *ngIf="memberForm.get('email')?.hasError('email')">
+            {{ 'Chama.InvalidEmail' | translate }}
+          </mat-error>
+          <mat-error *ngIf="memberForm.get('email')?.hasError('required')">
+            {{ 'Chama.Required' | translate }}
+          </mat-error>
+        </mat-form-field>
+      </div>
+
+      <div class="layout-row-wrap gap-16px">
+        <mat-form-field appearance="fill" class="flex-48">
+          <mat-label>{{ 'Chama.NationalId' | translate }}</mat-label>
+          <input matInput formControlName="nationalId" required />
+          <mat-error *ngIf="memberForm.get('nationalId')?.hasError('required')">
+            {{ 'Chama.Required' | translate }}
+          </mat-error>
+        </mat-form-field>
+      </div>
+
+      <h3 class="m-b-8">{{ 'Chama.PayoutAccountDetails' | translate }}</h3>
+
+      <div class="layout-row-wrap gap-16px">
+        <mat-form-field appearance="fill" class="flex-48">
+          <mat-label>{{ 'Chama.BankName' | translate }}</mat-label>
+          <input matInput formControlName="payoutAccountBank" required />
+          <mat-error *ngIf="memberForm.get('payoutAccountBank')?.hasError('required')">
+            {{ 'Chama.Required' | translate }}
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" class="flex-48">
+          <mat-label>{{ 'Chama.AccountNumber' | translate }}</mat-label>
+          <input matInput formControlName="payoutAccountNumber" required />
+          <mat-error *ngIf="memberForm.get('payoutAccountNumber')?.hasError('required')">
+            {{ 'Chama.Required' | translate }}
+          </mat-error>
+        </mat-form-field>
+      </div>
+
+      <div class="layout-row-wrap gap-16px">
+        <mat-form-field appearance="fill" class="flex-48">
+          <mat-label>{{ 'Chama.AccountName' | translate }}</mat-label>
+          <input matInput formControlName="payoutAccountName" required />
+          <mat-error *ngIf="memberForm.get('payoutAccountName')?.hasError('required')">
+            {{ 'Chama.Required' | translate }}
+          </mat-error>
+        </mat-form-field>
+      </div>
+
+      <div class="layout-row align-end gap-8px">
+        <a mat-button routerLink="/chama/members">{{ 'Chama.Cancel' | translate }}</a>
+        <button mat-raised-button color="primary" type="submit" [disabled]="memberForm.invalid">
+          {{ 'Chama.CreateMember' | translate }}
+        </button>
+      </div>
+    </form>
+  </mat-card-content>
+</mat-card>

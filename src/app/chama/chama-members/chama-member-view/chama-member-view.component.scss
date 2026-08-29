@@ -1,0 +1,87 @@
+/**
+ * Copyright since 2025 Mifos Initiative
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
+/**
+ * Copyright since 2025 Mifos Initiative
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
+:host {
+  display: block;
+}
+
+.chama-member-view {
+  padding: 16px;
+}
+
+.card-actions {
+  float: right;
+}
+
+.member-field {
+  .field-label {
+    display: block;
+    font-size: 12px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+
+  .field-value {
+    display: block;
+    font-size: 16px;
+    color: #333;
+    font-weight: 500;
+  }
+}
+
+.tab-content {
+  padding: 16px;
+}
+
+.stat-card {
+  min-width: 200px;
+
+  .stat-label {
+    display: block;
+    font-size: 12px;
+    color: #666;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    display: block;
+    font-size: 24px;
+    font-weight: 500;
+    color: #333;
+  }
+
+  .red {
+    color: #f44336;
+  }
+}
+
+.no-data {
+  padding: 32px;
+  text-align: center;
+  color: #999;
+}
+
+.w-100 {
+  width: 100%;
+}
+
+.red {
+  color: #f44336;
+  font-weight: 500;
+}
