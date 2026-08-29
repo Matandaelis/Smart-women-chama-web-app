@@ -14,6 +14,14 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+/**
+ * Copyright since 2025 Mifos Initiative
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -26,7 +34,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { TranslateModule } from '@ngx-translate/core';
 import { MaterialModule } from 'app/shared/material.module';
 import { ChamaMember, ContributionRequirement } from '../../models';
-import { MemberStatus } from '../../models/chama.enums';
+import { MemberStatus, ExitResolution } from '../../models/chama.enums';
 
 @Component({
   selector: 'mifosx-chama-member-view',
@@ -92,9 +100,15 @@ export class ChamaMemberViewComponent implements OnInit {
   exit(): void {
     const reason = prompt('Enter exit reason:');
     if (reason) {
-      this.chamaService.exitMember(this.member.id, reason).subscribe(() => {
-        this.router.navigate(['/chama/members']);
-      });
+      this.chamaService
+        .exitMember({
+          memberId: this.member.id,
+          reason,
+          resolution: ExitResolution.DEBT_FOLLOWS
+        })
+        .subscribe(() => {
+          this.router.navigate(['/chama/members']);
+        });
     }
   }
 }

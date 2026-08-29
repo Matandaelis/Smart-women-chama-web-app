@@ -14,6 +14,14 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+/**
+ * Copyright since 2025 Mifos Initiative
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
@@ -106,7 +114,8 @@ export class ChamaConfigurationComponent implements OnInit {
         payoutPolicy: {
           requireFullPool: formValue.payoutRequireFullPool,
           allowPartialPayout: formValue.payoutAllowPartial,
-          approvalThreshold: this.configuration.payoutPolicy.approvalThreshold
+          approvalThreshold: this.configuration.payoutPolicy.approvalThreshold,
+          maxShortfallPercentage: this.configuration.payoutPolicy.maxShortfallPercentage ?? 100
         },
         latePaymentPolicy: {
           enabled: formValue.latePaymentEnabled,

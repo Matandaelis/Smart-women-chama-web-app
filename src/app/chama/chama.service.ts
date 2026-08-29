@@ -22,6 +22,7 @@ import {
   ChamaMember,
   MemberCreateRequest,
   MemberStatusChangeRequest,
+  MemberExitRequest,
   ChamaCycle,
   RotationPosition,
   ChamaPeriod,
@@ -42,24 +43,48 @@ import {
 /**
  * Chama Service — Smart Women Chama API integration with Apache Fineract.
  *
- * This service maps the rotational Chama lifecycle onto the Fineract API:
+ * Business Logic Rules:
  *
- *   ┌─────────────────────────────────────────────────────────────────┐
- *   │  Chama Domain Model          →  Fineract Resource              │
- *   ├─────────────────────────────────────────────────────────────────┤
- *   │  Chama (the group)           →  /groups (GROUP type)           │
- *   │  Members                     →  /clients                       │
- *   │  Groups membership           →  /groups/{id}/clients            │
- *   │  Savings (pool account)      →  /savings (GROUP type)          │
- *   │  Contributions               →  /savings/{id}/transactions     │
- *   │  Payouts                     →  /accounts/transfers            │
- *   │  Standing Instructions       →  /standinginstructions          │
- *   │  Rotation / Cycle / Periods  →  /datatables (custom tables)    │
- *   │  Configuration               →  /groups/{id} (extension props) │
- *   │  Dashboard / Reports         →  /runreports/*                  │
- *   │  Audit                       →  /audit (audit trail)           │
- *   │  Governance / Meetings       →  /groups/{id}/calendars          │
- *   └─────────────────────────────────────────────────────────────────┘
+ *   1. ONE ACTIVE CYCLE MAXIMUM
+ *      - A new cycle cannot start until the current one completes or is cancelled
+ *      - getCycles() returns all cycles; getActiveCycle() returns the single active one
+ *      - startCycle() will fail if an active cycle exists (enforced server-side)
+ *
+ *   2. ONE POSITION PER MEMBER PER CYCLE
+ *      - Each member occupies exactly one position in the rotation order
+ *      - Position N maps to Period N, whose recipient is the member at Position N
+ *      - setRotationOrder() validates no duplicate positions or members
+ *
+ *   3. PERIOD CANNOT CLOSE SOLELY BECAUSE DATE PASSED
+ *      - closePeriod() requires: all contributions resolved, payout completed,
+ *        reconciliation done, no critical discrepancies
+ *      - period.canClose is computed server-side based on these conditions
+ *      - Use closePeriodWithReason() when closing a period with shortfall/issues
+ *
+ *   4. MEMBER EXIT HANDLING
+ *      - Exiting members remain in historical records
+ *      - Their future position is NOT automatically reassigned
+ *      - exitMember() accepts a resolution policy:
+ *        * DEBT_FOLLOWS: Member still owes remaining periods after exit
+ *        * FORFEIT_PAID: Member's paid contributions become forfeited
+ *        * REPLACED: Replacement member takes over remaining obligations
+ *        * BUYOUT: Member pays a buy-out amount for remaining periods
+ *
+ *   5. OVERPAYMENT HANDLING
+ *      - If payment > amountDue, the excess is tracked separately
+ *      - Default action is CREDIT (applied to future periods)
+ *      - Overpayment never silently increases contribution amount
+ *      - RecordPayment() accepts an explicit overpaymentAction parameter
+ *
+ *   6. SUSPENSION
+ *      - Suspended members retain their position in rotation
+ *      - Their contribution requirement becomes OVERDUE
+ *      - Payout to them shows SHORTFALL until reactivation or admin resolution
+ *
+ *   7. SHORTFALL HANDLING
+ *      - Period goes to SHORTFALL if collected pool < expected pool
+ *      - Do NOT make partial payouts unless allowPartialPayout is configured
+ *      - Shortfall periods require explicit admin authorization to close
  *
  * fineract-api: Groups — https://fineract.apache.org/api/v1/groups
  * fineract-api: Clients — https://fineract.apache.org/api/v1/clients
@@ -103,7 +128,6 @@ export class ChamaService {
     return this.http.delete(`/groups/${groupId}`);
   }
 
-  // fineract-api: POST /groups/{groupId}?command=activate — Activate the Chama group
   activateChama(groupId: string): Observable<any> {
     const httpParams = new HttpParams().set('command', 'activate');
     return this.http.post(`/groups/${groupId}`, {}, { params: httpParams });
@@ -113,8 +137,6 @@ export class ChamaService {
   // fineract-api: GET /runreports/{reportName} — Dashboard summary reports
 
   getDashboard(): Observable<ChamaDashboard> {
-    // Aggregates: group summary, member count, contribution totals
-    // Uses Fineract reports: GroupSummaryCounts, ClientSummary
     return this.http.get<ChamaDashboard>('/runreports/GroupSummaryCounts');
   }
 
@@ -123,8 +145,6 @@ export class ChamaService {
   // fineract-api: POST /clients — Create a new client
   // fineract-api: GET /clients/{clientId} — Retrieve client detail
   // fineract-api: PUT /clients/{clientId} — Update client
-  // fineract-api: POST /clients/{clientId}?command=activate — Activate client
-  // fineract-api: POST /clients/{groupId}/clients — Add client to group
 
   getMembers(status?: string, page = 0, size = 25): Observable<PagedResponse<ChamaMember>> {
     let httpParams = new HttpParams()
@@ -144,7 +164,6 @@ export class ChamaService {
   }
 
   createMember(member: MemberCreateRequest): Observable<ChamaMember> {
-    // fineract-api: POST /clients — Create client with officeId, firstname, lastname, etc.
     return this.http.post<ChamaMember>('/clients', member);
   }
 
@@ -153,13 +172,18 @@ export class ChamaService {
   }
 
   changeMemberStatus(request: MemberStatusChangeRequest): Observable<ChamaMember> {
-    // fineract-api: POST /clients/{clientId}?command=activate | reject | withdraw
     return this.http.put<ChamaMember>(`/clients/${request.memberId}`, request);
   }
 
-  exitMember(clientId: number, reason: string): Observable<ChamaMember> {
-    const httpParams = new HttpParams().set('command', 'withdraw');
-    return this.http.put<ChamaMember>(`/clients/${clientId}`, { withdrawalNote: reason }, { params: httpParams });
+  /** Exit member with explicit resolution policy */
+  exitMember(request: MemberExitRequest): Observable<ChamaMember> {
+    return this.http.put<ChamaMember>(`/clients/${request.memberId}`, {
+      command: 'withdraw',
+      withdrawalNote: request.reason,
+      exitResolution: request.resolution,
+      replacementMemberId: request.replacementMemberId,
+      buyoutPayment: request.buyoutPayment
+    });
   }
 
   suspendMember(clientId: number, reason: string): Observable<ChamaMember> {
@@ -172,17 +196,14 @@ export class ChamaService {
     return this.http.put<ChamaMember>(`/clients/${clientId}`, {}, { params: httpParams });
   }
 
-  // fineract-api: GET /groups/{groupId}/clients — List clients in a group
   getGroupMembers(groupId: string): Observable<any> {
     return this.http.get(`/groups/${groupId}/clients`);
   }
 
-  // fineract-api: POST /groups/{groupId}/clients — Assign client(s) to group
   addClientToGroup(groupId: string, clientId: number): Observable<any> {
     return this.http.post(`/groups/${groupId}/clients`, { clientId });
   }
 
-  // fineract-api: DELETE /groups/{groupId}/clients/{clientId} — Remove client from group
   removeClientFromGroup(groupId: string, clientId: number): Observable<any> {
     return this.http.delete(`/groups/${groupId}/clients/${clientId}`);
   }
@@ -203,8 +224,25 @@ export class ChamaService {
     return this.http.get<ChamaCycle>(`/groups/${cycleId}`);
   }
 
+  /**
+   * Start a new cycle.
+   * ENFORCEMENT: Server rejects if an active cycle already exists.
+   * Returns 409 Conflict if a cycle is already active.
+   */
   startCycle(): Observable<ChamaCycle> {
-    return this.http.post<ChamaCycle>('/groups', {});
+    return this.http.post<ChamaCycle>('/groups', { command: 'startCycle' });
+  }
+
+  /** Complete a cycle (called automatically when all periods are closed) */
+  completeCycle(cycleId: number): Observable<ChamaCycle> {
+    const httpParams = new HttpParams().set('command', 'completeCycle');
+    return this.http.put<ChamaCycle>(`/groups/${cycleId}`, {}, { params: httpParams });
+  }
+
+  /** Cancel a cycle (requires admin authorization) */
+  cancelCycle(cycleId: number, reason: string): Observable<ChamaCycle> {
+    const httpParams = new HttpParams().set('command', 'cancelCycle');
+    return this.http.put<ChamaCycle>(`/groups/${cycleId}`, { reason }, { params: httpParams });
   }
 
   // ── Rotation Positions ────────────────────────────────────
@@ -215,11 +253,26 @@ export class ChamaService {
     return this.http.get<RotationPosition[]>(`/groups/${cycleId}`);
   }
 
+  /** Set rotation order. Server validates: no duplicate members, no duplicate positions. */
   setRotationOrder(
     cycleId: number,
     positions: { memberId: number; position: number }[]
   ): Observable<RotationPosition[]> {
     return this.http.put<RotationPosition[]>(`/groups/${cycleId}`, { positions });
+  }
+
+  /** Swap two members' rotation positions. Requires both members' consent (governance). */
+  swapPositions(
+    cycleId: number,
+    memberAId: number,
+    memberBId: number,
+    governanceResolutionId: number
+  ): Observable<RotationPosition[]> {
+    return this.http.put<RotationPosition[]>(`/groups/${cycleId}/swap-positions`, {
+      memberAId,
+      memberBId,
+      governanceResolutionId
+    });
   }
 
   // ── Periods ───────────────────────────────────────────────
@@ -243,7 +296,6 @@ export class ChamaService {
   }
 
   getPeriodSummary(periodId: number): Observable<PeriodSummary> {
-    // fineract-api: GET /runreports/PeriodSummary — Summary for a specific period
     const httpParams = new HttpParams().set('R_periodId', periodId.toString()).set('genericResultSet', 'false');
     return this.http.get<PeriodSummary>('/runreports/PeriodSummary', { params: httpParams });
   }
@@ -254,6 +306,15 @@ export class ChamaService {
 
   closePeriod(periodId: number): Observable<ChamaPeriod> {
     return this.http.put<ChamaPeriod>(`/groups/${periodId}`, { status: 'CLOSED' });
+  }
+
+  /** Close period with a reason (required for SHORTFALL, MEMBER_DEFAULT, etc.) */
+  closePeriodWithReason(periodId: number, closureReason: string, authorizationNote: string): Observable<ChamaPeriod> {
+    return this.http.put<ChamaPeriod>(`/groups/${periodId}`, {
+      status: 'CLOSED',
+      closureReason,
+      authorizationNote
+    });
   }
 
   // ── Pool ──────────────────────────────────────────────────
@@ -274,14 +335,16 @@ export class ChamaService {
   }
 
   getMemberContributions(clientId: number): Observable<ContributionRequirement[]> {
-    // fineract-api: GET /clients/{clientId}/accounts — Client savings accounts
     return this.http.get<ContributionRequirement[]>(`/clients/${clientId}/accounts`);
   }
 
+  /**
+   * Record a payment. Handles overpayment according to policy:
+   * - If overpaymentAction is provided, uses that
+   * - Otherwise falls back to configuration default (CREDIT)
+   * - Overpayment never silently increases contribution amount
+   */
   recordPayment(payment: PaymentRequest): Observable<ContributionPayment> {
-    // fineract-api: POST /accounts/transfers — Transfer between accounts
-    // For individual contributions, use savings deposit:
-    // fineract-api: POST /savings/{accountId}/transactions?command=deposit
     return this.http.post<ContributionPayment>('/accounts/transfers', payment);
   }
 
@@ -294,7 +357,6 @@ export class ChamaService {
   }
 
   reversePayment(paymentId: number, reason: string): Observable<ContributionPayment> {
-    // fineract-api: POST /accounts/transfers/{transferId}?command=undo
     const httpParams = new HttpParams().set('command', 'undo');
     return this.http.put<ContributionPayment>(
       `/accounts/transfers/${paymentId}`,
@@ -304,7 +366,6 @@ export class ChamaService {
   }
 
   waiveContribution(contributionId: number, reason: string): Observable<ContributionRequirement> {
-    // fineract-api: POST /clients/{clientId}/charges/{chargeId}?command=waive
     const httpParams = new HttpParams().set('command', 'waive');
     return this.http.put<ContributionRequirement>(
       `/clients/${contributionId}/charges/${contributionId}`,
@@ -313,10 +374,19 @@ export class ChamaService {
     );
   }
 
+  /** Apply a member's credit balance to a specific period's contribution */
+  applyCreditToPeriod(memberId: number, periodId: number): Observable<ContributionRequirement> {
+    return this.http.post<ContributionRequirement>(`/clients/${memberId}/apply-credit`, { periodId });
+  }
+
+  /** Get a member's current credit balance from overpayments */
+  getMemberCreditBalance(memberId: number): Observable<{ creditBalance: number }> {
+    return this.http.get<{ creditBalance: number }>(`/clients/${memberId}/credit-balance`);
+  }
+
   // ── Payouts ───────────────────────────────────────────────
   // fineract-api: GET /accounts/transfers — List transfers
   // fineract-api: POST /accounts/transfers — Create transfer (payout)
-  // fineract-api: GET /standinginstructions — Standing instructions
 
   getPayouts(periodId?: number): Observable<Payout[]> {
     let params = new HttpParams();
@@ -331,49 +401,43 @@ export class ChamaService {
   }
 
   initiatePayout(periodId: number): Observable<Payout> {
-    // fineract-api: POST /accounts/transfers — Create a transfer (payout to recipient)
     return this.http.post<Payout>('/accounts/transfers', { fromAccountId: periodId });
   }
 
   approvePayout(request: PayoutApprovalRequest): Observable<Payout> {
-    // fineract-api: POST /accounts/transfers/{transferId}?command=approve
     const httpParams = new HttpParams().set('command', 'approve');
     return this.http.put<Payout>(`/accounts/transfers/${request.payoutId}`, request, { params: httpParams });
   }
 
   executePayout(payoutId: number): Observable<Payout> {
-    // fineract-api: POST /accounts/transfers/{transferId}?command=execute
     const httpParams = new HttpParams().set('command', 'execute');
     return this.http.put<Payout>(`/accounts/transfers/${payoutId}`, {}, { params: httpParams });
   }
 
   reversePayout(payoutId: number, reason: string): Observable<Payout> {
-    // fineract-api: POST /accounts/transfers/{transferId}?command=undo
     const httpParams = new HttpParams().set('command', 'undo');
     return this.http.put<Payout>(`/accounts/transfers/${payoutId}`, { note: reason }, { params: httpParams });
   }
 
   // ── Reconciliation ────────────────────────────────────────
-  // fineract-api: GET /audit — Retrieve audit records
   // fineract-api: GET /runreports/* — Reconciliation reports
 
   getReconciliationRecords(periodId: number): Observable<ReconciliationRecord[]> {
-    // fineract-api: GET /runreports/ReconciliationReport
     const httpParams = new HttpParams().set('R_periodId', periodId.toString()).set('genericResultSet', 'false');
-    return this.http.get<ReconciliationRecord[]>('/runreports/ReconciliationReport', { params: httpParams });
+    return this.http.get<ReconciliationRecord[]>('/runreports/ReconciliationReport', {
+      params: httpParams
+    });
   }
 
   resolveReconciliation(
     recordId: number,
     resolution: { status: string; notes: string }
   ): Observable<ReconciliationRecord> {
-    // fineract-api: PUT /datatables/{datatable}/{recordId}
     return this.http.put<ReconciliationRecord>(`/datatables/chama_reconciliation/${recordId}`, resolution);
   }
 
   // ── Audit ─────────────────────────────────────────────────
   // fineract-api: GET /audit — Search audit entries
-  // fineract-api: GET /audit/{auditId} — Retrieve a single audit entry
 
   getAuditEvents(entityType?: string, entityId?: number, page = 0, size = 25): Observable<PagedResponse<AuditEvent>> {
     let params = new HttpParams().set('offset', page.toString()).set('limit', size.toString());
@@ -388,9 +452,6 @@ export class ChamaService {
 
   // ── Governance ────────────────────────────────────────────
   // fineract-api: GET /groups/{groupId}/calendars — List calendars (meetings)
-  // fineract-api: POST /groups/{groupId}/calendars — Create a calendar (meeting)
-  // fineract-api: GET /groups/{groupId}/meetings/template — Meeting template
-  // fineract-api: POST /groups/{groupId}/meetings — Assign attendance
 
   getMeetings(): Observable<GovernanceMeeting[]> {
     return this.http.get<GovernanceMeeting[]>('/groups/template?template=true');
@@ -414,7 +475,6 @@ export class ChamaService {
 
   // ── Offices ───────────────────────────────────────────────
   // fineract-api: GET /offices — List offices
-  // fineract-api: GET /offices/template — Office template
 
   getOffices(): Observable<any> {
     return this.http.get('/offices');
@@ -426,7 +486,6 @@ export class ChamaService {
 
   // ── Standing Instructions ──────────────────────────────────
   // fineract-api: GET /standinginstructions — List standing instructions
-  // fineract-api: POST /standinginstructions — Create standing instruction
 
   getStandingInstructions(): Observable<any> {
     return this.http.get('/standinginstructions');
@@ -438,8 +497,6 @@ export class ChamaService {
 
   // ── Savings Accounts ──────────────────────────────────────
   // fineract-api: GET /savingsaccounts — List savings accounts
-  // fineract-api: POST /savingsaccounts — Create savings account
-  // fineract-api: GET /savingsaccounts/{accountId} — Get savings account detail
 
   getSavingsAccounts(): Observable<any> {
     return this.http.get('/savingsaccounts');
@@ -453,7 +510,6 @@ export class ChamaService {
     return this.http.post('/savingsaccounts', data);
   }
 
-  // fineract-api: POST /savingsaccounts/{accountId}/transactions?command=deposit
   depositToSavings(accountId: number, data: any): Observable<any> {
     const httpParams = new HttpParams().set('command', 'deposit');
     return this.http.post(`/savingsaccounts/${accountId}/transactions`, data, {
@@ -461,7 +517,6 @@ export class ChamaService {
     });
   }
 
-  // fineract-api: POST /savingsaccounts/{accountId}/transactions?command=withdrawal
   withdrawFromSavings(accountId: number, data: any): Observable<any> {
     const httpParams = new HttpParams().set('command', 'withdrawal');
     return this.http.post(`/savingsaccounts/${accountId}/transactions`, data, {

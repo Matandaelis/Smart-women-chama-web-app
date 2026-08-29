@@ -107,3 +107,42 @@ export enum ContributionFrequency {
   MONTHLY = 'MONTHLY',
   QUARTERLY = 'QUARTERLY'
 }
+
+// ── Overpayment Handling ──────────────────────────────────────
+// Applied when a member pays more than the contribution amount due.
+export enum OverpaymentAction {
+  /** Hold as credit toward future periods */
+  CREDIT = 'CREDIT',
+  /** Apply as extra contribution to current period */
+  APPLY_TO_CURRENT = 'APPLY_TO_CURRENT',
+  /** Return to member as refund */
+  REFUND = 'REFUND',
+  /** Require manual admin resolution */
+  MANUAL = 'MANUAL'
+}
+
+// ── Member Exit Resolution ────────────────────────────────────
+// How an exiting member's remaining obligations are handled.
+export enum ExitResolution {
+  /** Exit after receiving payout: member still owes remaining periods */
+  DEBT_FOLLOWS = 'DEBT_FOLLOWS',
+  /** Exit before receiving: contributions already paid become forfeited */
+  FORFEIT_PAID = 'FORFEIT_PAID',
+  /** Replacement member takes over remaining obligations */
+  REPLACED = 'REPLACED',
+  /** Member pays buy-in for remaining periods and exits cleanly */
+  BUYOUT = 'BUYOUT'
+}
+
+// ── Period Closure Reason ─────────────────────────────────────
+// Required when closing a period that isn't in normal PAID state.
+export enum PeriodClosureReason {
+  /** All contributions paid, payout completed — normal closure */
+  NORMAL = 'NORMAL',
+  /** Closed with outstanding shortfall after admin authorization */
+  SHORTFALL_AUTHORIZED = 'SHORTFALL_AUTHORIZED',
+  /** Recipient waived payout (rare but used in some chamas) */
+  PAYOUT_WAIVED = 'PAYOUT_WAIVED',
+  /** Member defaulted and period forcibly closed */
+  MEMBER_DEFAULT = 'MEMBER_DEFAULT'
+}

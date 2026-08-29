@@ -24,7 +24,10 @@ import {
   PayoutStatus,
   ReconciliationStatus,
   PaymentTiming,
-  ContributionFrequency
+  ContributionFrequency,
+  OverpaymentAction,
+  ExitResolution,
+  PeriodClosureReason
 } from './chama.enums';
 
 // ── Chama Configuration ───────────────────────────────────────
@@ -41,6 +44,8 @@ export interface ChamaConfiguration {
   currentRecipientId: number;
   payoutPolicy: PayoutPolicy;
   latePaymentPolicy: LatePaymentPolicy;
+  overpaymentPolicy: OverpaymentPolicy;
+  exitPolicy: ExitPolicy;
   approvalRequiredForPayout: boolean;
   createdAt: string;
   updatedAt: string;
@@ -50,6 +55,8 @@ export interface PayoutPolicy {
   requireFullPool: boolean;
   allowPartialPayout: boolean;
   approvalThreshold: number;
+  /** Maximum shortfall percentage allowed before requiring authorization */
+  maxShortfallPercentage: number;
 }
 
 export interface LatePaymentPolicy {
@@ -57,6 +64,26 @@ export interface LatePaymentPolicy {
   gracePeriodDays: number;
   lateFeeAmount: number;
   lateFeeType: 'FIXED' | 'PERCENTAGE';
+}
+
+export interface OverpaymentPolicy {
+  /** Default action when member overpays */
+  defaultAction: OverpaymentAction;
+  /** Allow admin to override per-payment */
+  allowManualOverride: boolean;
+  /** Maximum credit balance a member can accumulate */
+  maxCreditBalance: number;
+}
+
+export interface ExitPolicy {
+  /** How to handle member who exits mid-cycle */
+  resolution: ExitResolution;
+  /** Whether a replacement member can be assigned */
+  allowReplacement: boolean;
+  /** Whether buy-out of remaining periods is required */
+  requireBuyout: boolean;
+  /** Number of periods before exit is effective (cooling off) */
+  noticePeriods: number;
 }
 
 // ── Member ────────────────────────────────────────────────────
@@ -79,6 +106,12 @@ export interface ChamaMember {
   totalContributionsMade: number;
   totalPayoutsReceived: number;
   outstandingBalance: number;
+  /** Running credit balance from overpayments */
+  creditBalance: number;
+  /** Exit resolution if member has exited */
+  exitResolution: ExitResolution | null;
+  /** Replacement member ID if this member was replaced */
+  replacementMemberId: number | null;
 }
 
 export interface MemberCreateRequest {
@@ -98,6 +131,14 @@ export interface MemberStatusChangeRequest {
   reason: string;
 }
 
+export interface MemberExitRequest {
+  memberId: number;
+  reason: string;
+  resolution: ExitResolution;
+  replacementMemberId?: number;
+  buyoutPayment?: number;
+}
+
 // ── Cycle & Rotation ──────────────────────────────────────────
 export interface ChamaCycle {
   id: number;
@@ -109,6 +150,10 @@ export interface ChamaCycle {
   activeMemberCount: number;
   rotationMethod: RotationMethod;
   currentPeriodNumber: number;
+  /** Number of completed periods in this cycle */
+  completedPeriods: number;
+  /** Whether a new cycle can be started (only when current is COMPLETED or CANCELLED) */
+  canStartNewCycle: boolean;
 }
 
 export interface RotationPosition {
@@ -119,6 +164,10 @@ export interface RotationPosition {
   memberName: string;
   periodId: number;
   periodNumber: number;
+  /** Whether this position was swapped */
+  isSwapped: boolean;
+  /** Original member ID if position was swapped */
+  originalMemberId: number | null;
 }
 
 // ── Period ────────────────────────────────────────────────────
@@ -137,6 +186,10 @@ export interface ChamaPeriod {
   payoutStatus: PayoutStatus;
   payoutAmount: number | null;
   isPayoutEligible: boolean;
+  /** Period cannot close solely because its date has passed */
+  canClose: boolean;
+  /** Closure reason if period was closed with issues */
+  closureReason: PeriodClosureReason | null;
 }
 
 export interface PeriodSummary {
@@ -164,6 +217,8 @@ export interface ContributionRequirement {
   lastPaymentDate: string | null;
   status: ContributionStatus;
   paymentTiming: PaymentTiming;
+  /** Credit applied from previous overpayment */
+  creditApplied: number;
 }
 
 export interface ContributionPayment {
@@ -179,6 +234,10 @@ export interface ContributionPayment {
   reference: string;
   notes: string;
   createdAt: string;
+  /** Amount in excess of the contribution due */
+  overpaymentAmount: number;
+  /** How the overpayment was handled */
+  overpaymentAction: OverpaymentAction | null;
 }
 
 export interface PaymentRequest {
@@ -189,6 +248,8 @@ export interface PaymentRequest {
   providerTransactionId: string;
   reference: string;
   notes: string;
+  /** Explicit overpayment handling override */
+  overpaymentAction?: OverpaymentAction;
 }
 
 // ── Pool ──────────────────────────────────────────────────────
@@ -202,6 +263,8 @@ export interface PoolStatus {
   isFullyFunded: boolean;
   isPayoutEligible: boolean;
   shortfallAmount: number;
+  /** Percentage of expected pool collected */
+  collectionPercentage: number;
 }
 
 // ── Payout ────────────────────────────────────────────────────
@@ -235,7 +298,7 @@ export interface PayoutApprovalRequest {
 export interface ReconciliationRecord {
   id: number;
   periodId: number;
-  transactionType: 'CONTRIBUTION' | 'PAYOUT' | 'FEE';
+  transactionType: 'CONTRIBUTION' | 'PAYOUT' | 'FEE' | 'OVERPAYMENT';
   internalPaymentId: number;
   providerTransactionId: string;
   expectedAmount: number;
