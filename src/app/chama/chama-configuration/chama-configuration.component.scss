@@ -41,7 +41,7 @@ h3 {
   max-width: 48%;
 }
 
-@media width <= 768px {
+@media (max-width: 768px) {
   .flex-48 {
     flex: 0 0 100%;
     max-width: 100%;
