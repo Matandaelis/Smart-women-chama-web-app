@@ -55,10 +55,10 @@
         <mat-card-title>{{ 'Chama.CollectedPool' | translate }}</mat-card-title>
       </mat-card-header>
       <mat-card-content>
-        <span class="summary-value"> KES {{ dashboard?.currentPeriod?.collectedPool | number: '1.0-0' || '0' }} </span>
+        <span class="summary-value"> KES {{ dashboard?.currentPeriod?.collectedPool | number: '1.0-0' }} </span>
         <span class="summary-detail">
           {{ 'Chama.of' | translate }}
-          KES {{ dashboard?.currentPeriod?.expectedPool | number: '1.0-0' || '0' }}
+          KES {{ dashboard?.currentPeriod?.expectedPool | number: '1.0-0' }}
           {{ 'Chama.expected' | translate }}
         </span>
       </mat-card-content>
@@ -71,7 +71,7 @@
         <mat-card-title>{{ 'Chama.Outstanding' | translate }}</mat-card-title>
       </mat-card-header>
       <mat-card-content>
-        <span class="summary-value"> KES {{ dashboard?.outstandingAmount | number: '1.0-0' || '0' }} </span>
+        <span class="summary-value"> KES {{ dashboard?.outstandingAmount | number: '1.0-0' }} </span>
         <span class="summary-detail">{{ 'Chama.PendingCollections' | translate }}</span>
       </mat-card-content>
     </mat-card>
