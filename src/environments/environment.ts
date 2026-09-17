@@ -15,7 +15,13 @@
 import env from './.env';
 
 // The `window.env` object is loaded in the `index.html` file
-const loadedEnv = window.env || {};
+const runtimeEnv = window.env || {};
+const loadedEnv = Object.fromEntries(
+  Object.entries(runtimeEnv).map(([key, value]) => [
+    key,
+    typeof value === 'string' && /^\$[A-Z0-9_]+$/.test(value) ? undefined : value
+  ])
+);
 
 const parsedMinLength = Number(loadedEnv.minPasswordLength);
 const resolvedMinPasswordLength = Number.isInteger(parsedMinLength) && parsedMinLength > 0 ? parsedMinLength : 8;
